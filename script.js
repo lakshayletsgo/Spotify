@@ -1,8 +1,9 @@
+// Finally the site is ready
+// It took me more than 30 hours to build this
+
 let currentSong = new Audio();
 console.log("JavaScript Time");
 let songs;
-// let defaultVol = 10;
-// currentSong.volume = 10;
 let currFol;
 function secondsToMinutesSeconds(seconds) {
   // Ensure input is a non-negative number
@@ -18,7 +19,8 @@ function secondsToMinutesSeconds(seconds) {
 }
 async function getSongs(folder) {
   currFol = folder;
-  let a = await fetch(`/${folder}/`);
+  let a = await fetch(`http://127.0.0.1:5500/${folder}/`);
+  console.log(`http://127.0.0.1:5500/${folder}/`);
   let response = await a.text();
 
   let div = document.createElement("div");
@@ -40,18 +42,19 @@ async function getSongs(folder) {
     songUl.innerHTML =
       songUl.innerHTML +
       `<li>
-              <img src="img/music.svg" class="invert-color" alt="" />
-              <div class="info">
-                <div>${temp
-                  .replaceAll("%20", " ")
-                  .replaceAll(".mp3", "")
-                  .replace("/", " ")}</div>
-                <div>Lakshay</div>
-              </div>
-              <div class="playNow">
-                <span>Play Now</span>
-                <img src="img/play.svg" class="invert-color" alt="" />
-              </div></li>`;
+    <img src="img/music.svg" class="invert-color" alt="" />
+    <div class="info">
+    <div>${temp
+      .replaceAll("%20", " ")
+      .replaceAll(".mp3", "")
+      .replace("/", " ")}</div>
+                  <div>Lakshay</div>
+                  </div>
+                  <div class="playNow">
+                  <span>Play Now</span>
+                  <img src="img/play.svg" class="invert-color" alt="" />
+                  </div></li>`;
+    // console.log(iterator);
   }
 
   Array.from(
@@ -79,13 +82,14 @@ const playMusic = (track, pause = false) => {
   document.querySelector(".songInfo").innerHTML = decodeURI(track)
     .replace(".mp3", "")
     .replaceAll("/", "");
+  console.log(track);
   document.querySelector(".songTime").innerHTML = "00:00/00:00";
   // currentSong.volume("20%");
   // audio.play();
 };
 
 async function displayAlbums() {
-  let a = await fetch(`Songs/`);
+  let a = await fetch(`http://127.0.0.1:5500/Songs/`);
   let response = await a.text();
   let div = document.createElement("div");
   div.innerHTML = response;
@@ -95,9 +99,9 @@ async function displayAlbums() {
   for (let index = 0; index < array.length; index++) {
     const e = array[index];
 
-    if (e.href.includes("Songs/")) {
+    if (e.href.includes("/Songs/")) {
       let folder = e.href.split("/").slice(-1)[0];
-      let a = await fetch(`Songs/${folder}/info.json`);
+      let a = await fetch(`http://127.0.0.1:5500/Songs/${folder}/info.json`);
       let response = await a.json();
       cardContainer.innerHTML =
         cardContainer.innerHTML +
@@ -120,7 +124,7 @@ async function displayAlbums() {
         </svg>
       </div>
       <img
-        src="Songs/${folder}/cover.jpg"
+        src="/Songs/${folder}/cover.jpg"
         alt="Lofi Beats"
       />
       <h2>${response.title}</h2>
@@ -131,13 +135,18 @@ async function displayAlbums() {
   Array.from(document.getElementsByClassName("card")).forEach((e) => {
     e.addEventListener("click", async (item) => {
       // console.log(item.currentTarget.dataset);
-      songs = await getSongs(`songs/${item.currentTarget.dataset.folder}`);
+      songs = await getSongs(`Songs/${item.currentTarget.dataset.folder}`);
       playMusic(songs[0].replace(".mp3", ""));
+      currentSong.volume = 0.2;
+      document
+        .querySelector(".range")
+        .getElementsByTagName("input")[0].value = 20;
     });
   });
 }
 async function main() {
   await getSongs("Songs/badassSongs");
+  console.log(songs[0].replace(".mp3", ""));
   playMusic(songs[0].replace(".mp3", ""), true);
   displayAlbums();
 
@@ -151,12 +160,20 @@ async function main() {
     }
   });
 
+  let index2 = songs.indexOf(currentSong.src.split("/").slice(-1)[0]);
   currentSong.addEventListener("timeupdate", () => {
     document.querySelector(".songTime").innerHTML = `${secondsToMinutesSeconds(
       currentSong.currentTime
     )}/${secondsToMinutesSeconds(currentSong.duration)}`;
     document.querySelector(".circle").style.left =
       (currentSong.currentTime / currentSong.duration) * 100 + "%";
+    if (currentSong.currentTime === currentSong.duration) {
+      ++index2;
+      if (index2 < songs.length) {
+        index2++;
+        playMusic(songs[index2].replace(".mp3", ""));
+      }
+    }
   });
   document.querySelector(".seekBar").addEventListener("click", (e) => {
     let percent = (e.offsetX / e.target.getBoundingClientRect().width) * 100;
@@ -171,14 +188,18 @@ async function main() {
   });
   previous.addEventListener("click", () => {
     console.log("Previous Clicked");
-    let index = songs.indexOf(currentSong.src.split("/").slice(-1)[0]);
+    let index = songs.indexOf(
+      "/" + currentSong.src.split("/").slice(-1)[0].replace(" ", "%20")
+    );
     if (index - 1 >= 0) {
       playMusic(songs[index - 1].replace(".mp3", ""));
     }
   });
   next.addEventListener("click", () => {
     console.log("Next Clicked");
-    let index = songs.indexOf(currentSong.src.split("/").slice(-1)[0]);
+    let index = songs.indexOf(
+      "/" + currentSong.src.split("/").slice(-1)[0].replace(" ", "%20")
+    );
     if (index + 1 < songs.length) {
       playMusic(songs[index + 1].replace(".mp3", ""));
     }
